@@ -6,8 +6,11 @@ const {BigNumber, utils} = require('ethers');
 const keccak256 = require('keccak256');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
+const mongoose = require('../db/connection');
+const airdropSchema = require('../db/schema/airdrop')
 
 let rewards = [];
+const Airdrop = mongoose.model('Airdrop', airdropSchema);
 
 async function getRewards() {
   const bribeV2 = await ethers.getContractAt('BribeV2', process.env.BRIBEV2_ADDRESS);
@@ -56,13 +59,17 @@ async function getRewards() {
       }
     }
     // generate merkle tree and save to file
-    const merkleJSON = generateMerkleJSON(rewards[i]);
+    const merkleJSON = generateMerkleJSON(i);
     // update merkle tree hash in contract
     const tx = await merkleContract.updateMerkleRoot(rewards[i].token, merkleJSON.merkleRoot);
     await tx.wait();
 
     let newTokenUpdate = parseInt(await merkleContract.update(rewards[i].token));
     await saveToJsonFile(rewards[i].token, newTokenUpdate, merkleJSON);
+
+    // save to db
+    let airdrop = new Airdrop({token: rewards[i].token, update: newTokenUpdate, merkleRoot: merkleJSON.merkleRoot, claims: rewards[i].amounts});
+    await airdrop.save();
   }
 }
 
@@ -89,17 +96,20 @@ function saveReward(token, account, amount) {
   }
 }
 
-function generateMerkleJSON(tokenRewards) {
+function generateMerkleJSON(rewardsIndex) {
   // generate merkle tree
-  const elements = tokenRewards.amounts.map((x) =>
+  const elements = rewards[rewardsIndex].amounts.map((x) =>
       utils.solidityKeccak256(['uint256', 'address', 'uint256'], [x.index, x.account, x.amount]),
   );
   // console.log(elements);
   const merkleTree = new MerkleTree(elements, keccak256, {sort: true});
   // merkleTree.print();
   const merkleRoot = merkleTree.getHexRoot();
-  let reducedAmounts = tokenRewards.amounts.reduce((memo, {account, amount, index}) => {
+  let reducedAmounts = rewards[rewardsIndex].amounts.reduce((memo, {account, amount, index}) => {
     let proof = merkleTree.getHexProof(elements[index]);
+
+    // also save the proof so we can easily put it in the db later
+    rewards[rewardsIndex].amounts[index].proof = proof;
     memo[account] = {amount: BigNumber.from(amount).toHexString(), index, proof};
     return memo;
   }, {});
