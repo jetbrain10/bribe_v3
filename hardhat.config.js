@@ -1,5 +1,5 @@
 require("@nomiclabs/hardhat-waffle");
-
+require("@nomiclabs/hardhat-vyper");
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
@@ -33,5 +33,8 @@ module.exports = {
         version: "0.4.24",
       },
     ],
+  },
+  vyper: {
+    version: "0.2.4",
   },
 };
