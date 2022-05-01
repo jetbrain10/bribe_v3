@@ -21,7 +21,7 @@ interface vote {
 }
 
 interface ve {
-    function balanceOf(address owner, uint256 _t) external view returns (uint256);
+    function balanceOfAt(address owner, uint block_number) external view returns (uint);
 }
 
 interface erc20 {
@@ -30,7 +30,7 @@ interface erc20 {
     function transferFrom(address sender, address recipient, uint amount) external returns (bool);
 }
 
-contract BribeV2VoteRBN is Ownable {
+contract BribeV3Vote is Ownable {
     vote VOTE;
     ve VE;
     uint constant desired_vote = 1;
@@ -85,7 +85,7 @@ contract BribeV2VoteRBN is Ownable {
 
     function estimate_bribe(uint vote_id, address reward_token, address claimant) external view returns (uint) {
         vote.VoteData memory _vote = VOTE.getVote(vote_id);
-        uint _ve = VE.balanceOf(claimant, _vote.start_date);
+        uint _ve = VE.balanceOfAt(claimant, _vote.snapshot_block);
         if (VOTE.getVoterState(vote_id, claimant) == desired_vote) {
             return reward_amount[vote_id][reward_token] * _ve / _vote.yea;
         } else {
@@ -115,7 +115,6 @@ contract BribeV2VoteRBN is Ownable {
     }
 
     function _claim_reward(uint vote_id, address reward_token, address claimant) internal returns (uint) {
-        vote.VoteData memory _vote = VOTE.getVote(vote_id);
         uint _vote_state = vote_states[vote_id][reward_token];
         if (_vote_state == 0) {
             _vote_state = _update_vote_state(vote_id, reward_token);
@@ -123,15 +122,15 @@ contract BribeV2VoteRBN is Ownable {
         require(_vote_state == 1 || _vote_state == 2);
         require(!has_claimed[vote_id][reward_token][claimant]);
         require(VOTE.getVoterState(vote_id, claimant) == desired_vote);
+
         has_claimed[vote_id][reward_token][claimant] = true;
 
-        uint _ve = VE.balanceOf(claimant, _vote.start_date);
+        uint _ve = VE.balanceOfAt(claimant, snapshot_block[vote_id]);
         uint _amount = reward_amount[vote_id][reward_token] * _ve / yeas[vote_id];
 
         if(_amount > 0){
-            emit Claim(block.timestamp, claimant, vote_id, reward_token, _amount);
+        emit Claim(block.timestamp, claimant, vote_id, reward_token, _amount);
         }
-
         return _amount;
     }
 

@@ -15,36 +15,36 @@ async function main() {
 
   console.log("Merkle deployed to:", merkle.address);
 
-  // deploy BribeV2
+  // deploy BribeV3
   const gaugeControllerAddress = process.env.GAUGE_CONTROLLER_ADDRESS;
   const veAddress = process.env.VE_ADDRESS;
   const feePercentage = 5;
   const feeAddress = fees.address;
 
-  const BribeV2 = await ethers.getContractFactory("BribeV2");
-  const bribeV2 = await BribeV2.deploy(gaugeControllerAddress, veAddress, feePercentage, feeAddress, merkle.address);
+  const BribeV3 = await ethers.getContractFactory("BribeV3");
+  const bribeV3 = await BribeV3.deploy(gaugeControllerAddress, veAddress, feePercentage, feeAddress, merkle.address);
 
-  await bribeV2.deployed();
+  await bribeV3.deployed();
 
-  console.log("BribeV2 deployed to:", bribeV2.address);
+  console.log("BribeV3 deployed to:", bribeV3.address);
 
-  // deploy BribeTokensV2
-  const BribeTokensV2 = await ethers.getContractFactory("BribeTokensV2");
-  const bribeTokensV2 = await BribeTokensV2.deploy(gaugeControllerAddress, veAddress, bribeV2.address);
+  // deploy BribeTokensV3
+  const BribeTokensV3 = await ethers.getContractFactory("BribeTokensV3");
+  const bribeTokensV3 = await BribeTokensV3.deploy(gaugeControllerAddress, veAddress, bribeV3.address);
 
-  await bribeTokensV2.deployed();
+  await bribeTokensV3.deployed();
 
-  console.log("BribeV2Tokens deployed to:", bribeTokensV2.address);
+  console.log("BribeV3Tokens deployed to:", bribeTokensV3.address);
 
-  // deploy BribeV2Vote
+  // deploy BribeV3Vote
   const voteAddress = process.env.VOTE_ADDRESS;
 
-  const BribeV2Vote = await ethers.getContractFactory("BribeV2Vote");
-  const bribeV2Vote = await BribeV2Vote.deploy(voteAddress, veAddress, feePercentage, feeAddress, merkle.address);
+  const BribeV3Vote = await ethers.getContractFactory("BribeV3Vote");
+  const bribeV3Vote = await BribeV3Vote.deploy(voteAddress, veAddress, feePercentage, feeAddress, merkle.address);
 
-  await bribeV2Vote.deployed();
+  await bribeV3Vote.deployed();
 
-  console.log("BribeV2Vote deployed to:", bribeV2Vote.address);
+  console.log("BribeV3Vote deployed to:", bribeV3Vote.address);
 
 }
 

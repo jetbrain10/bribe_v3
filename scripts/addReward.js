@@ -12,7 +12,7 @@ async function addRewards(){
 }
 
 async function addReward(whaleAddress, rewardtokenAddress, gaugeAddress) {
-  const bribeV2 = await ethers.getContractAt('BribeV2', process.env.BRIBEV2_ADDRESS);
+  const bribeV3 = await ethers.getContractAt('BribeV3', process.env.BRIBEV3_ADDRESS);
   //add a reward for testing
   // impersonate account
   let rewardToken = await ethers.getContractAt('ERC20', rewardtokenAddress);
@@ -26,10 +26,10 @@ async function addReward(whaleAddress, rewardtokenAddress, gaugeAddress) {
   whale.address = whale._address;
 
   // approve transfer of erc20 first
-  let approveTX = await rewardToken.connect(whale).approve(bribeV2.address, amount);
+  let approveTX = await rewardToken.connect(whale).approve(bribeV3.address, amount);
   await approveTX.wait();
 
-  let addReward = await bribeV2.connect(whale).add_reward_amount(gaugeAddress, rewardtokenAddress, amount);
+  let addReward = await bribeV3.connect(whale).add_reward_amount(gaugeAddress, rewardtokenAddress, amount);
   await addReward.wait();
 }
 

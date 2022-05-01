@@ -13,7 +13,7 @@ let rewards = [];
 const Airdrop = mongoose.model('Airdrop', airdropSchema);
 
 async function getRewards() {
-  const bribeV2 = await ethers.getContractAt('BribeV2', process.env.BRIBEV2_ADDRESS);
+  const bribeV3 = await ethers.getContractAt('BribeV3', process.env.BRIBEV3_ADDRESS);
 
   // claim bribes for each user who has voted, check claimable first
   const gaugeController = await ethers.getContractAt("contracts/GaugeController.vy:GaugeController", process.env.GAUGE_CONTROLLER_ADDRESS);
@@ -25,11 +25,11 @@ async function getRewards() {
 
   for (let i = 0; i < filteredVotes.length; i++) {
     let gaugeAddr = filteredVotes[i].args.gauge_addr;
-    let rewardTokens = await bribeV2.rewards_per_gauge(gaugeAddr);
+    let rewardTokens = await bribeV3.rewards_per_gauge(gaugeAddr);
     for (let j = 0; j < rewardTokens.length; j++) {
       // check claimable
       let claimer = filteredVotes[i].args.user;
-      let claimable = await bribeV2.claimable(claimer, gaugeAddr, rewardTokens[j]);
+      let claimable = await bribeV3.claimable(claimer, gaugeAddr, rewardTokens[j]);
       // console.log(claimable);
       if (parseInt(claimable) > 0) {
         saveReward(rewardTokens[j], claimer, parseInt(claimable));

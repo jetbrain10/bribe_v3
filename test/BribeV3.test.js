@@ -8,7 +8,7 @@ chai.use(solidity);
 const fee = 10;
 const project = 'CRV';
 
-describe('BribeV2 ', function() {
+describe('BribeV3 ', function() {
   let initialOwner, newOwner, initialFees, fees, initialDistribution, distribution, Bribe, bribe, rewardToken, decimals;
   let gaugeControllerAddress, gaugeAddress, veAddress, claimAddress, amount, feePercentage, calculatedFee;
   let rewardtokenAddress = '0x39AA39c021dfbaE8faC545936693aC917d5E7563'; //cUSDC
@@ -35,7 +35,7 @@ describe('BribeV2 ', function() {
   }
   before(async function() {
     [initialOwner, newOwner, initialFees, fees, initialDistribution, distribution] = await ethers.getSigners();
-    Bribe = await ethers.getContractFactory('BribeV2');
+    Bribe = await ethers.getContractFactory('BribeV3');
     bribe = await Bribe.deploy(gaugeControllerAddress, veAddress, fee, initialFees.address, initialDistribution.address);
     await bribe.deployed();
   });

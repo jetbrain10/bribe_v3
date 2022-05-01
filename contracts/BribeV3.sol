@@ -33,7 +33,7 @@ interface erc20 {
     function approve(address spender, uint amount) external returns (bool);
 }
 
-contract BribeV2 is Ownable {
+contract BribeV3 is Ownable {
     uint constant WEEK = 86400 * 7;
     uint constant PRECISION = 10**18;
     uint8 public feePercentage;

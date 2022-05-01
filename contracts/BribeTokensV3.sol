@@ -46,7 +46,7 @@ interface bribe {
     function reward_per_token(address, address) external view returns (uint);
 }
 
-contract BribeTokensV2 {
+contract BribeTokensV3 {
     uint constant WEEK = 86400 * 7;
     uint constant PRECISION = 10**18;
     GaugeController GAUGE;
