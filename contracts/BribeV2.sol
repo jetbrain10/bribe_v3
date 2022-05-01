@@ -98,8 +98,8 @@ contract BribeV2 is Ownable {
         amount -= fee;
         _safeTransferFrom(reward_token, msg.sender, feeAddress, fee);
         _safeTransferFrom(reward_token, msg.sender, distributionAddress, amount);
-        _reward_per_gauge[gauge][reward_token] += amount;
         _update_period(gauge, reward_token);
+        _reward_per_gauge[gauge][reward_token] += amount;
         _add(gauge, reward_token);
 
         emit Bribe(block.timestamp, msg.sender, gauge, reward_token, amount);
@@ -111,7 +111,7 @@ contract BribeV2 is Ownable {
     }
 
     function claimable(address user, address gauge, address reward_token) external view returns (uint) {
-        uint _period = active_period[gauge][reward_token];
+        uint _period = block.timestamp / WEEK * WEEK;
         uint _amount = 0;
         if (last_user_claim[user][gauge][reward_token] < _period) {
             uint _last_vote = GAUGE.last_user_vote(user, gauge);
