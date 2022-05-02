@@ -7,7 +7,7 @@ const keccak256 = require('keccak256');
 const fs = require('fs');
 const fsPromises = require('fs').promises;
 const mongoose = require('../db/connection');
-const airdropSchema = require('../db/schema/airdrop')
+const airdropSchema = require('../db/schema/airdrop');
 
 let rewards = [];
 const Airdrop = mongoose.model('Airdrop', airdropSchema);
@@ -16,7 +16,7 @@ async function getRewards() {
   const bribeV3 = await ethers.getContractAt('BribeV3', process.env.BRIBEV3_ADDRESS);
 
   // claim bribes for each user who has voted, check claimable first
-  const gaugeController = await ethers.getContractAt("contracts/GaugeController.vy:GaugeController", process.env.GAUGE_CONTROLLER_ADDRESS);
+  const gaugeController = await ethers.getContractAt('contracts/GaugeController.vy:GaugeController', process.env.GAUGE_CONTROLLER_ADDRESS);
   let gaugeVotesFilter = gaugeController.filters.VoteForGauge(null, null, null, null);
   let gaugeVotes = await gaugeController.queryFilter(gaugeVotesFilter, -67200);
   console.log(gaugeVotes.length);
@@ -48,12 +48,17 @@ async function getRewards() {
       console.log(previousBalances);
       if (previousBalances) {
         for (let account in previousBalances.claims) {
-          // check if balance is claimed, if not add it to the existing balance
-          let claimed = await merkleContract.isClaimed(rewards[i].token, previousBalances.claims[account].index);
-          if (!claimed) {
-            let amountToBeClaimed = parseInt(previousBalances.claims[account].amount, 16);
-            // Add the new rewards to the old (if they exist)
-            saveReward(rewards[i].token, account, amountToBeClaimed);
+          // check if account is blacklisted
+          let blacklisted = await bribeV3.isBlacklisted(account);
+
+          if (!blacklisted) {
+            // check if balance is claimed, if not add it to the existing balance
+            let claimed = await merkleContract.isClaimed(rewards[i].token, previousBalances.claims[account].index);
+            if (!claimed) {
+              let amountToBeClaimed = parseInt(previousBalances.claims[account].amount, 16);
+              // Add the new rewards to the old (if they exist)
+              saveReward(rewards[i].token, account, amountToBeClaimed);
+            }
           }
         }
       }

@@ -61,6 +61,8 @@ contract BribeV3 is Ownable {
     mapping(address => address[]) public _gauges_per_reward;
     mapping(address => mapping(address => bool)) public _rewards_in_gauge;
 
+    mapping(address=>bool) public isBlacklisted;
+
     event Bribe(uint time, address indexed briber, address gauge, address reward_token, uint amount);
     event Claim(uint time, address indexed claimer, address gauge, address reward_token, uint amount);
 
@@ -111,6 +113,9 @@ contract BribeV3 is Ownable {
     }
 
     function claimable(address user, address gauge, address reward_token) external view returns (uint) {
+        if(isBlacklisted[user]){
+            return 0;
+        }
         uint _period = block.timestamp / WEEK * WEEK;
         uint _amount = 0;
         if (last_user_claim[user][gauge][reward_token] < _period) {
@@ -181,6 +186,18 @@ contract BribeV3 is Ownable {
 
     function calculate_fee(uint amount) public view returns (uint) {
         return amount * feePercentage / 100;
+    }
+
+    function blackList(address user) public onlyOwner {
+        require(!isBlacklisted[user], "user already blacklisted");
+        isBlacklisted[user] = true;
+        // emit events as well
+    }
+
+    function removeFromBlacklist(address user) public onlyOwner {
+        require(isBlacklisted[user], "user already whitelisted");
+        isBlacklisted[user] = false;
+        // emit events as well
     }
 
 }
