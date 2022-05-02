@@ -50,16 +50,16 @@ contract BribeV3 is Ownable {
         set_distribution_address(_distributionAddress);
     }
 
-    mapping(address => mapping(address => uint)) _claims_per_gauge;
-    mapping(address => mapping(address => uint)) _reward_per_gauge;
+    mapping(address => mapping(address => uint)) public _claims_per_gauge;
+    mapping(address => mapping(address => uint)) public _reward_per_gauge;
 
     mapping(address => mapping(address => uint)) public reward_per_token;
     mapping(address => mapping(address => uint)) public active_period;
     mapping(address => mapping(address => mapping(address => uint))) public last_user_claim;
 
-    mapping(address => address[]) _rewards_per_gauge;
-    mapping(address => address[]) _gauges_per_reward;
-    mapping(address => mapping(address => bool)) _rewards_in_gauge;
+    mapping(address => address[]) public _rewards_per_gauge;
+    mapping(address => address[]) public _gauges_per_reward;
+    mapping(address => mapping(address => bool)) public _rewards_in_gauge;
 
     event Bribe(uint time, address indexed briber, address gauge, address reward_token, uint amount);
     event Claim(uint time, address indexed claimer, address gauge, address reward_token, uint amount);
