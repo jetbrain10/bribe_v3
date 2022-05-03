@@ -50,36 +50,38 @@ contract BribeV3 is Ownable {
         set_distribution_address(_distributionAddress);
     }
 
-    mapping(address => mapping(address => uint)) public _claims_per_gauge;
-    mapping(address => mapping(address => uint)) public _reward_per_gauge;
+    mapping(uint=> mapping(address => mapping(address => uint))) public _claims_per_gauge;
+    mapping(uint=> mapping(address => mapping(address => uint))) public _reward_per_gauge;
 
-    mapping(address => mapping(address => uint)) public reward_per_token;
+    mapping(uint=> mapping(address => mapping(address => uint))) public reward_per_token;
     mapping(address => mapping(address => uint)) public active_period;
-    mapping(address => mapping(address => mapping(address => uint))) public last_user_claim;
+    mapping(address => mapping(address => uint)) public last_claim;
 
-    mapping(address => address[]) public _rewards_per_gauge;
-    mapping(address => address[]) public _gauges_per_reward;
-    mapping(address => mapping(address => bool)) public _rewards_in_gauge;
+    mapping(uint => mapping(address => address[])) public _rewards_per_gauge;
+    mapping(uint => mapping(address => address[])) public _gauges_per_reward;
+    mapping(uint => mapping(address => mapping(address => bool))) public _rewards_in_gauge;
 
     mapping(address=>bool) public isBlacklisted;
 
     event Bribe(uint time, address indexed briber, address gauge, address reward_token, uint amount);
     event Claim(uint time, address indexed claimer, address gauge, address reward_token, uint amount);
 
-    function _add(address gauge, address reward) internal {
-        if (!_rewards_in_gauge[gauge][reward]) {
-            _rewards_per_gauge[gauge].push(reward);
-            _gauges_per_reward[reward].push(gauge);
-            _rewards_in_gauge[gauge][reward] = true;
+    function _add(uint period, address gauge, address reward) internal {
+        if (!_rewards_in_gauge[period][gauge][reward]) {
+            _rewards_per_gauge[period][gauge].push(reward);
+            _gauges_per_reward[period][reward].push(gauge);
+            _rewards_in_gauge[period][gauge][reward] = true;
         }
     }
 
     function rewards_per_gauge(address gauge) external view returns (address[] memory) {
-        return _rewards_per_gauge[gauge];
+        uint period = block.timestamp / WEEK * WEEK;
+        return _rewards_per_gauge[period][gauge];
     }
 
     function gauges_per_reward(address reward) external view returns (address[] memory) {
-        return _gauges_per_reward[reward];
+        uint period = block.timestamp / WEEK * WEEK;
+        return _gauges_per_reward[period][reward];
     }
 
     function _update_period(address gauge, address reward_token) internal returns (uint) {
@@ -88,8 +90,8 @@ contract BribeV3 is Ownable {
             _period = block.timestamp / WEEK * WEEK;
             GAUGE.checkpoint_gauge(gauge);
             uint _slope = GAUGE.points_weight(gauge, _period).slope;
-            uint _amount = _reward_per_gauge[gauge][reward_token] - _claims_per_gauge[gauge][reward_token];
-            reward_per_token[gauge][reward_token] = _amount * PRECISION / _slope;
+            uint _amount = _reward_per_gauge[_period][gauge][reward_token] - _claims_per_gauge[_period][gauge][reward_token];
+            reward_per_token[_period][gauge][reward_token] = _amount * PRECISION / _slope;
             active_period[gauge][reward_token] = _period;
         }
         return _period;
@@ -97,19 +99,21 @@ contract BribeV3 is Ownable {
 
     function add_reward_amount(address gauge, address reward_token, uint amount) external returns (bool) {
         uint fee = calculate_fee(amount);
+        uint period = block.timestamp / WEEK * WEEK;
         amount -= fee;
         _safeTransferFrom(reward_token, msg.sender, feeAddress, fee);
         _safeTransferFrom(reward_token, msg.sender, distributionAddress, amount);
+        _reward_per_gauge[period][gauge][reward_token] += amount;
         _update_period(gauge, reward_token);
-        _reward_per_gauge[gauge][reward_token] += amount;
-        _add(gauge, reward_token);
+        _add(period, gauge, reward_token);
 
         emit Bribe(block.timestamp, msg.sender, gauge, reward_token, amount);
         return true;
     }
 
     function tokens_for_bribe(address user, address gauge, address reward_token) external view returns (uint) {
-        return uint(int(VE.get_last_user_slope(user))) * reward_per_token[gauge][reward_token] / PRECISION;
+        uint period = block.timestamp / WEEK * WEEK;
+        return uint(int(VE.get_last_user_slope(user))) * reward_per_token[period][gauge][reward_token] / PRECISION;
     }
 
     function claimable(address user, address gauge, address reward_token) external view returns (uint) {
@@ -118,11 +122,11 @@ contract BribeV3 is Ownable {
         }
         uint _period = block.timestamp / WEEK * WEEK;
         uint _amount = 0;
-        if (last_user_claim[user][gauge][reward_token] < _period) {
+        if (last_claim[gauge][reward_token] < _period) {
             uint _last_vote = GAUGE.last_user_vote(user, gauge);
             if (_last_vote < _period) {
                 uint _slope = GAUGE.vote_user_slopes(user, gauge).slope;
-                _amount = _slope * reward_per_token[gauge][reward_token] / PRECISION;
+                _amount = _slope * reward_per_token[_period][gauge][reward_token] / PRECISION;
             }
         }
         return _amount;
@@ -135,14 +139,14 @@ contract BribeV3 is Ownable {
     function _claim_reward(address user, address gauge, address reward_token) internal returns (uint) {
         uint _period = _update_period(gauge, reward_token);
         uint _amount = 0;
-        if (last_user_claim[user][gauge][reward_token] < _period) {
-            last_user_claim[user][gauge][reward_token] = _period;
+        if (last_claim[gauge][reward_token] < _period) {
+            last_claim[gauge][reward_token] = _period;
             uint _last_vote = GAUGE.last_user_vote(user, gauge);
             if (_last_vote < _period) {
                 uint _slope = GAUGE.vote_user_slopes(user, gauge).slope;
-                _amount = _slope * reward_per_token[gauge][reward_token] / PRECISION;
+                _amount = _slope * reward_per_token[_period][gauge][reward_token] / PRECISION;
                 if (_amount > 0) {
-                    _claims_per_gauge[gauge][reward_token] += _amount;
+                    _claims_per_gauge[_period][gauge][reward_token] += _amount;
                     emit Claim(block.timestamp, user, gauge, reward_token, _amount);
                 }
             }
