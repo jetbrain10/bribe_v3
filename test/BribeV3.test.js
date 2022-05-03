@@ -28,8 +28,8 @@ describe('BribeV3 ', function() {
       break;
     default:
       gaugeControllerAddress = '0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB';
-      gaugeAddress = '0x903dA6213a5A12B61c821598154EfAd98C3B20E4';
-      claimAddress = '0xd2357fffbcdc3780835ceff1447c357c413ddd65';
+      gaugeAddress = '0x1cEBdB0856dd985fAe9b8fEa2262469360B8a3a6';
+      claimAddress = '0xadeeb9d09b8bcee10943198fb6f6a4229bab3675';
       veAddress = '0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2'; // veCRV
       break;
   }
@@ -190,17 +190,6 @@ describe('BribeV3 ', function() {
       // console.log(ethers.utils.formatUnits(claimable, decimals));
       expect(claimable).to.be.above(0);
 
-    });
-    it('Should claim reward', async function() {
-      await hre.network.provider.request({
-        method: 'hardhat_impersonateAccount',
-        params: [claimAddress],
-      });
-      const claimer = await ethers.provider.getSigner(claimAddress);
-      claimer.address = claimer._address;
-
-      let claimReward = bribe.claim_reward(claimer.address, gaugeAddress, rewardtokenAddress);
-       expect(claimReward).to.emit(bribe, "Claim");
     });
   });
 });

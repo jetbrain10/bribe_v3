@@ -7,7 +7,7 @@ const hardhat = require('hardhat');
 async function addRewards(){
   await addReward("0xb3bd459e0598dde1fe84b1d0a1430be175b5d5be", "0x39AA39c021dfbaE8faC545936693aC917d5E7563", "0x903dA6213a5A12B61c821598154EfAd98C3B20E4"); //cUSDC
 
-  await addReward("0xb3bd459e0598dde1fe84b1d0a1430be175b5d5be", "0xE1Be5D3f34e89dE342Ee97E6e90D405884dA6c67", "0xd0698b2E41C42bcE42B51f977F962Fd127cF82eA"); //TRX
+  await addReward("0xb3bd459e0598dde1fe84b1d0a1430be175b5d5be", "0xE1Be5D3f34e89dE342Ee97E6e90D405884dA6c67", "0x1cEBdB0856dd985fAe9b8fEa2262469360B8a3a6"); //TRX
 
 }
 
