@@ -50,21 +50,17 @@ contract BribeV3 is Ownable {
         set_distribution_address(_distributionAddress);
     }
 
-    mapping(uint=> mapping(address => mapping(address => uint))) public _claims_per_gauge;
-    mapping(uint=> mapping(address => mapping(address => uint))) public _reward_per_gauge;
+    mapping(uint => mapping(address => mapping(address => uint))) public _reward_per_gauge;
 
-    mapping(uint=> mapping(address => mapping(address => uint))) public reward_per_token;
-    mapping(address => mapping(address => uint)) public active_period;
-    mapping(address => mapping(address => uint)) public last_claim;
+    mapping(uint => mapping(address => mapping(address => uint))) public reward_per_token;
 
     mapping(uint => mapping(address => address[])) public _rewards_per_gauge;
     mapping(uint => mapping(address => address[])) public _gauges_per_reward;
     mapping(uint => mapping(address => mapping(address => bool))) public _rewards_in_gauge;
 
-    mapping(address=>bool) public isBlacklisted;
+    mapping(address => bool) public isBlacklisted;
 
     event Bribe(uint time, address indexed briber, address gauge, address reward_token, uint amount);
-    event Claim(uint time, address indexed claimer, address gauge, address reward_token, uint amount);
 
     function _add(uint period, address gauge, address reward) internal {
         if (!_rewards_in_gauge[period][gauge][reward]) {
@@ -85,15 +81,12 @@ contract BribeV3 is Ownable {
     }
 
     function _update_period(address gauge, address reward_token) internal returns (uint) {
-        uint _period = active_period[gauge][reward_token];
-        if (block.timestamp >= _period + WEEK) {
-            _period = block.timestamp / WEEK * WEEK;
-            GAUGE.checkpoint_gauge(gauge);
-            uint _slope = GAUGE.points_weight(gauge, _period).slope;
-            uint _amount = _reward_per_gauge[_period][gauge][reward_token] - _claims_per_gauge[_period][gauge][reward_token];
-            reward_per_token[_period][gauge][reward_token] = _amount * PRECISION / _slope;
-            active_period[gauge][reward_token] = _period;
-        }
+        uint _period = block.timestamp / WEEK * WEEK;
+        GAUGE.checkpoint_gauge(gauge);
+        uint _slope = GAUGE.points_weight(gauge, _period).slope;
+        uint _amount = _reward_per_gauge[_period][gauge][reward_token];
+        reward_per_token[_period][gauge][reward_token] = _amount * PRECISION / _slope;
+
         return _period;
     }
 
@@ -117,40 +110,18 @@ contract BribeV3 is Ownable {
     }
 
     function claimable(address user, address gauge, address reward_token) external view returns (uint) {
-        if(isBlacklisted[user]){
+        if (isBlacklisted[user]) {
             return 0;
         }
         uint _period = block.timestamp / WEEK * WEEK;
         uint _amount = 0;
-        if (last_claim[gauge][reward_token] < _period) {
-            uint _last_vote = GAUGE.last_user_vote(user, gauge);
-            if (_last_vote < _period) {
-                uint _slope = GAUGE.vote_user_slopes(user, gauge).slope;
-                _amount = _slope * reward_per_token[_period][gauge][reward_token] / PRECISION;
-            }
-        }
-        return _amount;
-    }
 
-    function claim_reward(address user, address gauge, address reward_token) external returns (uint) {
-        return _claim_reward(user, gauge, reward_token);
-    }
-
-    function _claim_reward(address user, address gauge, address reward_token) internal returns (uint) {
-        uint _period = _update_period(gauge, reward_token);
-        uint _amount = 0;
-        if (last_claim[gauge][reward_token] < _period) {
-            last_claim[gauge][reward_token] = _period;
-            uint _last_vote = GAUGE.last_user_vote(user, gauge);
-            if (_last_vote < _period) {
-                uint _slope = GAUGE.vote_user_slopes(user, gauge).slope;
-                _amount = _slope * reward_per_token[_period][gauge][reward_token] / PRECISION;
-                if (_amount > 0) {
-                    _claims_per_gauge[_period][gauge][reward_token] += _amount;
-                    emit Claim(block.timestamp, user, gauge, reward_token, _amount);
-                }
-            }
+        uint _last_vote = GAUGE.last_user_vote(user, gauge);
+        if (_last_vote < _period && _period - _last_vote < WEEK) {
+            uint _slope = GAUGE.vote_user_slopes(user, gauge).slope;
+            _amount = _slope * reward_per_token[_period][gauge][reward_token] / PRECISION;
         }
+
         return _amount;
     }
 
@@ -195,13 +166,11 @@ contract BribeV3 is Ownable {
     function blackList(address user) public onlyOwner {
         require(!isBlacklisted[user], "user already blacklisted");
         isBlacklisted[user] = true;
-        // emit events as well
     }
 
     function removeFromBlacklist(address user) public onlyOwner {
         require(isBlacklisted[user], "user already whitelisted");
         isBlacklisted[user] = false;
-        // emit events as well
     }
 
 }
