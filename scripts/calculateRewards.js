@@ -26,14 +26,16 @@ async function getRewards() {
   for (let i = 0; i < filteredVotes.length; i++) {
     let gaugeAddr = filteredVotes[i].args.gauge_addr;
     let rewardTokens = await bribeV3.rewards_per_gauge(gaugeAddr);
+    let claimer = filteredVotes[i].args.user;
+    let time = new Date(filteredVotes[i].args.time * 1000);
+
     for (let j = 0; j < rewardTokens.length; j++) {
       // check claimable
-      let claimer = filteredVotes[i].args.user;
       let claimable = await bribeV3.claimable(claimer, gaugeAddr, rewardTokens[j]);
-      // console.log(claimable);
-      if (parseInt(claimable) > 0) {
-        saveReward(rewardTokens[j], claimer, parseInt(claimable));
+      if (gaugeAddr === '0x903dA6213a5A12B61c821598154EfAd98C3B20E4' || gaugeAddr === '0x1cEBdB0856dd985fAe9b8fEa2262469360B8a3a6') {
+        console.log(claimer, gaugeAddr, rewardTokens[j], time, claimable);
       }
+      saveReward(rewardTokens[j], claimer, parseInt(claimable));
     }
   }
 

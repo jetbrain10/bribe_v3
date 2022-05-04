@@ -117,7 +117,8 @@ contract BribeV3 is Ownable {
         uint _amount = 0;
 
         uint _last_vote = GAUGE.last_user_vote(user, gauge);
-        if (_last_vote < _period && _period - _last_vote < WEEK) {
+        uint _vote_period = _last_vote / WEEK * WEEK;
+        if (_vote_period == _period) {
             uint _slope = GAUGE.vote_user_slopes(user, gauge).slope;
             _amount = _slope * reward_per_token[_period][gauge][reward_token] / PRECISION;
         }
